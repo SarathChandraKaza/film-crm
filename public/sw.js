@@ -1,5 +1,5 @@
-const CACHE_NAME = 'film-crm-v1';
-const SHELL_ASSETS = ['/', '/index.html'];
+const CACHE_NAME = 'film-crm-v2';
+const SHELL_ASSETS = ['/film-crm/', '/film-crm/index.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
