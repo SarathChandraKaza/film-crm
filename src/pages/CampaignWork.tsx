@@ -2,7 +2,7 @@ import { useStore, ContactCampaignState, Contact, PromotionContact } from '../st
 import { useLocation, useParams } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { TagChip, ActionIcons } from '../components/SharedUI';
-import { ChevronRight, Check, X as XIcon, Settings2, Share } from 'lucide-react';
+import { ChevronRight, Check, X as XIcon, Settings2, Share, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -102,6 +102,17 @@ export default function CampaignWork() {
     setLocation('/campaigns');
   };
 
+  const handleDeleteCampaign = () => {
+  const confirmed = window.confirm(
+    `Delete "${campaign.title}"?\n\nThis will permanently delete this campaign. Your contacts will not be deleted.`
+  );
+
+  if (!confirmed) return;
+
+  store.deleteCampaign(campaign.id);
+  setLocation('/campaigns');
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
       {/* Sticky Header */}
@@ -111,7 +122,22 @@ export default function CampaignWork() {
             <h2 className="text-2xl font-bold tracking-tight text-white">{campaign.title}</h2>
             <p className="text-muted-foreground text-sm">Campaign Execution</p>
           </div>
-          <Button variant="secondary" onClick={handleCompleteCampaign}>Finish Campaign</Button>
+          <div className="flex items-center gap-2">
+              <Button
+                variant="destructive"
+                onClick={handleDeleteCampaign}
+              >
+                <Trash2 size={16} className="mr-2" />
+                Delete
+              </Button>
+
+              <Button
+                variant="secondary"
+                onClick={handleCompleteCampaign}
+              >
+                Finish Campaign
+              </Button>
+            </div>
         </div>
         
         <div className="bg-card border border-card-border p-3 rounded-lg flex items-center gap-4">

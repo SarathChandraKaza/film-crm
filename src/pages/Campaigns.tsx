@@ -6,8 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Plus, Target, CheckCircle2, PlayCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
+import { Trash2 } from 'lucide-react';
+
 export default function Campaigns() {
   const campaigns = useStore(state => state.campaigns);
+  const store = useStore();
   const [, setLocation] = useLocation();
 
   return (
@@ -39,6 +42,16 @@ export default function Campaigns() {
             const remaining = total - completed - skipped;
             
             const percent = total > 0 ? Math.round(((completed + skipped) / total) * 100) : 0;
+
+            const handleDeleteCampaign = (id: string, title: string) => {
+              const confirmed = window.confirm(
+                `Delete "${title}"?\n\nThis will permanently delete this campaign. Your contacts will not be deleted.`
+              );
+
+              if (!confirmed) return;
+
+              store.deleteCampaign(id);
+            };
             
             return (
               <div 
@@ -59,14 +72,32 @@ export default function Campaigns() {
                       {camp.lastWorkedAt && ` • Last worked: ${format(new Date(camp.lastWorkedAt), 'MMM d, h:mm a')}`}
                     </p>
                   </div>
-                  {camp.status === 'active' && (
-                    <Button variant="secondary" className="w-full md:w-auto" onClick={(e) => {
-                      e.stopPropagation();
-                      setLocation(`/campaigns/${camp.id}`);
-                    }}>
-                      Resume
-                    </Button>
-                  )}
+                  <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                      {camp.status === 'active' && (
+                        <Button
+                          variant="secondary"
+                          className="w-full md:w-auto"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLocation(`/campaigns/${camp.id}`);
+                          }}
+                        >
+                          Resume
+                        </Button>
+                      )}
+
+                      <Button
+                        variant="destructive"
+                        className="w-full md:w-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCampaign(camp.id, camp.title);
+                        }}
+                      >
+                        <Trash2 size={16} className="mr-2" />
+                        Delete
+                      </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
