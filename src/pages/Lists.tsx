@@ -82,13 +82,28 @@ export default function Lists() {
                 className={`p-3 rounded-lg cursor-pointer transition-colors flex justify-between items-center group ${activeListId === list.id ? 'bg-primary/20 text-primary' : 'bg-card text-muted-foreground hover:bg-secondary hover:text-white'}`}
               >
                 <span className="font-medium truncate pr-2">{list.name}</span>
-                <Trash2 size={14} className="opacity-0 group-hover:opacity-100 hover:text-destructive" onClick={(e) => {
-                  e.stopPropagation();
-                  if(confirm('Delete this list?')) {
-                    deleteList(list.id);
-                    if(activeListId === list.id) setActiveListId(null);
-                  }
-                }} />
+               
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 md:opacity-0 md:group-hover:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation();
+
+                        if (confirm(`Delete "${list.name}"?`)) {
+                          deleteList(list.id);
+
+                          if (activeListId === list.id) {
+                            setActiveListId(null);
+                          }
+                        }
+                      }}
+                    >
+                      <Trash2
+                        size={16}
+                        className="text-muted-foreground hover:text-destructive"
+                      />
+                    </Button>
               </div>
             ))}
           </div>
@@ -185,7 +200,7 @@ export default function Lists() {
                                     departments: activeList.departments.map(d => d.id === dept.id ? { ...d, memberContactIds: d.memberContactIds.filter(x => x !== cid) } : d)
                                   });
                                 }}>
-                                  <Trash2 size={14} className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive" />
+                                  <Trash2 size={14} className="text-muted-foreground hover:text-destructive" />
                                 </Button>
                               </div>
                             </div>
