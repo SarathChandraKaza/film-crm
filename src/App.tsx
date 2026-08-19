@@ -1,4 +1,5 @@
 import { Route, Switch, Router as WouterRouter } from 'wouter';
+import { useHashLocation } from 'wouter/use-hash-location';
 import { Shell } from './components/layout/Shell';
 import Home from './pages/Home';
 import Contacts from './pages/Contacts';
@@ -10,13 +11,13 @@ import CampaignNew from './pages/CampaignNew';
 import CampaignWork from './pages/CampaignWork';
 import Lists from './pages/Lists';
 import Settings from './pages/Settings';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from '@/components/ui/atoaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function App() {
   return (
     <TooltipProvider>
-      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+        <WouterRouter hook={useHashLocation}>
         <Shell>
           <Switch>
             <Route path="/" component={Home} />
