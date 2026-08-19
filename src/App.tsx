@@ -11,7 +11,7 @@ import CampaignNew from './pages/CampaignNew';
 import CampaignWork from './pages/CampaignWork';
 import Lists from './pages/Lists';
 import Settings from './pages/Settings';
-import { Toaster } from '@/components/ui/atoaster';
+import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function App() {
