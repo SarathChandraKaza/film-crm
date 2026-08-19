@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Edit2, Users } from 'lucide-react';
 import { TagChip, ActionIcons } from '../components/SharedUI';
+import { Plus, Trash2, Edit2, Users, GripVertical } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,108 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableCandidate({
+  contact,
+  onRemove,
+}: {
+  contact: Contact;
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: contact.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center justify-between p-3 bg-background border border-border rounded-lg ${
+        isDragging ? 'opacity-70 border-primary' : ''
+      }`}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+
+        {/* VISIBLE DRAG HANDLE */}
+        <button
+          type="button"
+          aria-label={`Drag ${contact.name}`}
+          {...attributes}
+          {...listeners}
+          className="flex items-center justify-center w-10 h-10 shrink-0 rounded-md bg-primary text-white cursor-grab active:cursor-grabbing touch-none"
+        >
+          <GripVertical size={22} />
+        </button>
+
+        <div className="min-w-0">
+          <h4 className="font-medium text-white truncate">
+            {contact.name}
+          </h4>
+
+          <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+            {contact.organization && (
+              <span>{contact.organization}</span>
+            )}
+
+            {contact.place && (
+              <span>• {contact.place}</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 ml-3 shrink-0">
+        <ActionIcons
+          mobile={contact.mobile}
+          whatsapp={contact.whatsapp}
+          email={contact.email}
+          instagram={contact.instagram}
+        />
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onRemove}
+        >
+          <Trash2
+            size={14}
+            className="text-muted-foreground hover:text-destructive"
+          />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 
 export default function Lists() {
   const lists = useStore(state => state.customLists);
@@ -44,8 +146,60 @@ export default function Lists() {
     }
   };
 
+   const handleCandidateDragEnd = (
+          event: DragEndEvent,
+          departmentId: string
+        ) => {
+          const { active, over } = event;
+
+          if (!over || active.id === over.id || !activeList) {
+            return;
+          }
+
+          const department = activeList.departments.find(
+            d => d.id === departmentId
+          );
+
+          if (!department) return;
+
+          const oldIndex = department.memberContactIds.indexOf(
+            String(active.id)
+          );
+
+          const newIndex = department.memberContactIds.indexOf(
+            String(over.id)
+          );
+
+          if (oldIndex === -1 || newIndex === -1) return;
+
+          const reorderedIds = arrayMove(
+            department.memberContactIds,
+            oldIndex,
+            newIndex
+          );
+
+          updateList(activeList.id, {
+            departments: activeList.departments.map(d =>
+              d.id === departmentId
+                ? {
+                    ...d,
+                    memberContactIds: reorderedIds,
+                  }
+                : d
+            ),
+          });
+        };
+
   const [searchOpenForDept, setSearchOpenForDept] = useState<string | null>(null);
   const [contactSearch, setContactSearch] = useState('');
+
+  const sensors = useSensors(
+      useSensor(PointerSensor, {
+        activationConstraint: {
+          distance: 8,
+        },
+      })
+    );
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto flex flex-col md:flex-row gap-8">
@@ -178,36 +332,56 @@ export default function Lists() {
                     </div>
 
                     <div className="grid gap-2">
-                      {dept.memberContactIds.length === 0 ? (
-                        <p className="text-sm text-muted-foreground italic">No candidates added.</p>
-                      ) : (
-                        dept.memberContactIds.map(cid => {
-                          const c = contacts.find(x => x.id === cid);
-                          if (!c) return null;
-                          return (
-                            <div key={cid} className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-background border border-border rounded-lg group">
-                              <div>
-                                <h4 className="font-medium text-white">{c.name}</h4>
-                                <div className="flex gap-2 text-xs text-muted-foreground mt-1">
-                                  {c.organization && <span>{c.organization}</span>}
-                                  {c.place && <span>• {c.place}</span>}
+                          {dept.memberContactIds.length === 0 ? (
+                            <p className="text-sm text-muted-foreground italic">
+                              No candidates added.
+                            </p>
+                          ) : (
+                            <DndContext
+                              sensors={sensors}
+                              collisionDetection={closestCenter}
+                              onDragEnd={(event) =>
+                                handleCandidateDragEnd(event, dept.id)
+                              }
+                            >
+                              <SortableContext
+                                items={dept.memberContactIds}
+                                strategy={verticalListSortingStrategy}
+                              >
+                                <div className="grid gap-2">
+                                  {dept.memberContactIds.map(cid => {
+                                    const c = contacts.find(x => x.id === cid);
+
+                                    if (!c) return null;
+
+                                    return (
+                                      <SortableCandidate
+                                        key={cid}
+                                        contact={c}
+                                        onRemove={() => {
+                                          updateList(activeList.id, {
+                                            departments: activeList.departments.map(d =>
+                                              d.id === dept.id
+                                                ? {
+                                                    ...d,
+                                                    memberContactIds:
+                                                      d.memberContactIds.filter(
+                                                        x => x !== cid
+                                                      ),
+                                                  }
+                                                : d
+                                            ),
+                                          });
+                                        }}
+                                      />
+                                    );
+                                  })}
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-4 mt-2 md:mt-0">
-                                <ActionIcons mobile={c.mobile} whatsapp={c.whatsapp} email={c.email} instagram={c.instagram} />
-                                <Button variant="ghost" size="icon" onClick={() => {
-                                  updateList(activeList.id, {
-                                    departments: activeList.departments.map(d => d.id === dept.id ? { ...d, memberContactIds: d.memberContactIds.filter(x => x !== cid) } : d)
-                                  });
-                                }}>
-                                  <Trash2 size={14} className="text-muted-foreground hover:text-destructive" />
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
+                              </SortableContext>
+                            </DndContext>
+                          )}
+                        </div>
+                   
                   </div>
                 ))}
               </div>
